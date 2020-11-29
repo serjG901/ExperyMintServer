@@ -1,0 +1,23 @@
+{
+  "name": "node-http-server",
+  "version": "1.0.0",
+  "description": "Node.js example server starter project",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "koa": "2.13.0",
+    "koa-bodyparser": "4.3.0",
+    "koa-mongo": "1.9.2",
+    "koa-mount": "4.0.0",
+    "koa-router": "10.0.0",
+    "koa-session": "6.1.0",
+    "koa-static": "5.0.0",
+    "mongodb": "^3.6.3"
+  },
+  "devDependencies": {
+    "nodemon": "1.18.4"
+  },
+  "keywords": []
+}
