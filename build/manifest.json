@@ -1,6 +1,6 @@
 {
-  "short_name": "ExperyMint",
-  "name": "ExperyMint - find people who are really close to you!",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",
