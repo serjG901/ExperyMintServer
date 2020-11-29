@@ -18,7 +18,7 @@ const CONFIG = {
   signed: true,
   rolling: false,
   renew: false,
-  secure: true,
+  secure: false,
   sameSite: true
 };
 
