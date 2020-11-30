@@ -126,6 +126,9 @@ router
   });
 
 app.use(mount("/", serve("./build")));
+app.use(mount("/account", serve("./build")));
+app.use(mount("/game", serve("./build")));
+app.use(mount("/chat", serve("./build")));
 
 app.use(router.routes()).use(router.allowedMethods());
 
@@ -265,6 +268,10 @@ async function getLoginData() {
     await client.connect();
     const database = client.db("ExperyMint");
     const collection = database.collection("loginData");
+    await collection.insertOne({
+      name: "serj",
+      pass: "gray"
+    });
     const loginData = await collection.find();
     return loginData;
   } finally {
