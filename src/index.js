@@ -52,6 +52,10 @@ router
     }
     ctx.body = { isLogin };
   })
+  .post("/isloggedin/", async (ctx, next) => {
+    const status = ctx.session.userID ? true : false;;
+    ctx.body = { status };
+  })
   .post("/setuser/", async (ctx, next) => {
     const newUser = {
       name: ctx.request.body.name,
@@ -85,11 +89,27 @@ router
     const user = await updateUser(userID, newUserData);
     ctx.body = user;
   })
+  .post("/setavatarserve/", async (ctx, next) => {
+    const userID = ctx.session.userID;
+    const newAvatar = ctx.request.body.avatar;
+    const avatar = await setAvatarServe(userID, newAvatar);
+    ctx.body = { avatar };
+  })
+  .post("/getavatar/", async (ctx, next) => {
+    const userID = ctx.session.userID;
+    const avatar = await getAvatar(userID);
+    ctx.body = { avatar };
+  })
   .post("/getotherusers/", async (ctx, next) => {
     const filter = ctx.request.body.filter;
     const userID = ctx.session.userID;
     const otherUsers = await getOtherUsers(userID, filter);
     ctx.body = otherUsers;
+  })
+  .post("/getotheravatar/", async (ctx, next) => {
+    const userID = ctx.request.body.otherUserID;
+    const avatar = await getAvatar(userID);
+    ctx.body = { avatar };
   })
   .post("/getmessages/", async (ctx, next) => {
     const otherUserID = ctx.request.body.otherUserID;
@@ -137,15 +157,18 @@ console.log("listening on port 3000");
 
 let loginData = new Map();
 let publicData = new Map();
+let avatarData = new Map();
 let messagesData = [];
 
 async function isNameFree(name) {
   return !loginData.has(name);
 }
 
-async function login({ name, password }) {
+async function login({ name, password, lastVisit }) {
   const user = loginData.get(name);
   if (user.password !== password) return false;
+  const userOld = publicData.get(name);
+  publicData.set(name, { ...userOld, lastVisit });
   return true;
 }
 
@@ -157,15 +180,16 @@ async function setUser(newUser) {
   });
   const publicUser = {
     name: newUser.name,
-    avatar: "",
     results: {},
     score: 0,
     mistruth: 0,
     manifest: "",
     tags: "",
-    filter: ""
+    filter: "",
+    lastUpdate: newUser.lastUpdate
   };
   publicData.set(newUser.name, publicUser);
+  avatarData.set(newUser.name, { avatar: null });
   return true;
 }
 
@@ -180,6 +204,17 @@ async function updateUser(userID, newUserData) {
   return user;
 }
 
+async function setAvatarServe(userID, avatar) {
+  avatarData.set(userID, { avatar });
+  const userAvatar = avatarData.get(userID);
+  return userAvatar.avatar;
+}
+
+async function getAvatar(userID) {
+  const userAvatar = avatarData.get(userID);
+  return userAvatar.avatar;
+}
+
 async function getOtherUsers(userID, filter) {
   let otherUsersInfo = {};
   const filterTags = filter ? filter.toLowerCase() : "";
@@ -192,8 +227,8 @@ async function getOtherUsers(userID, filter) {
             name: entry[1].name,
             manifest: entry[1].manifest,
             mistruth: entry[1].mistruth,
-            avatar: entry[1].avatar,
             tags: entry[1].tags,
+            lastUpdate: entry[1].lastUpdate,
             results: entry[1].results
           }
         };
@@ -214,6 +249,7 @@ async function getUsers() {
         tags: entry[1].tags,
         score: entry[1].score,
         mistruth: entry[1].mistruth,
+        lastUpdate: entry[1].lastUpdate,
         results: entry[1].results
       }
     };
