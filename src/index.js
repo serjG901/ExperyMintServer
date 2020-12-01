@@ -43,7 +43,8 @@ router
   .post("/login/", async (ctx, next) => {
     const user = {
       name: ctx.request.body.name,
-      password: ctx.request.body.password
+      password: ctx.request.body.password,
+      lastUpdate: ctx.request.body.lastUpdate
     };
     const isLogin = await login(user);
     if (isLogin) {
@@ -59,7 +60,8 @@ router
   .post("/setuser/", async (ctx, next) => {
     const newUser = {
       name: ctx.request.body.name,
-      password: ctx.request.body.password
+      password: ctx.request.body.password,
+      lastUpdate: ctx.request.body.lastUpdate
     };
     const status = await setUser(newUser);
     if (status) {
