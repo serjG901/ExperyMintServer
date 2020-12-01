@@ -57,6 +57,11 @@ router
     const status = ctx.session.userID ? true : false;;
     ctx.body = { status };
   })
+  .post("/tologgedout/", async (ctx, next) => {
+    ctx.session.userID = null;
+    const status = ctx.session.userID ? false : true;;
+    ctx.body = { status };
+  })
   .post("/setuser/", async (ctx, next) => {
     const newUser = {
       name: ctx.request.body.name,
