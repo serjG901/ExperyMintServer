@@ -22,7 +22,7 @@ const CONFIG = {
   rolling: false /** (boolean) Force a session identifier cookie to be set on every response. The expiration is reset to the original maxAge, resetting the expiration countdown. (default is false) */,
   renew: false /** (boolean) renew session when session is nearly expired, so we can always keep user logged in. (default is false)*/,
   secure: false /** (boolean) secure cookie*/,
-  sameSite: null /** (string) session cookie sameSite options (default null, don't set it) */
+  sameSite: null /** (string) session cookie sameSite options (default null, don't set it) */,
 };
 
 app.use(session(CONFIG, app));
@@ -48,7 +48,7 @@ router
     const user = {
       name: ctx.request.body.name,
       password: ctx.request.body.password,
-      lastUpdate: ctx.request.body.lastUpdate
+      lastUpdate: ctx.request.body.lastUpdate,
     };
     const isLogin = await loginDB(user);
     if (isLogin) {
@@ -69,7 +69,7 @@ router
     const newUser = {
       name: ctx.request.body.name,
       password: ctx.request.body.password,
-      lastUpdate: ctx.request.body.lastUpdate
+      lastUpdate: ctx.request.body.lastUpdate,
     };
     const status = await setUserDB(newUser);
     if (status) {
@@ -91,7 +91,7 @@ router
       manifest: ctx.request.body.manifest,
       tags: ctx.request.body.tags,
       filter: ctx.request.body.filter,
-      lastUpdate: ctx.request.body.lastUpdate
+      lastUpdate: ctx.request.body.lastUpdate,
     };
     const userID = ctx.session.userID;
     const status = await updateUserDB(userID, newUserData);
@@ -177,12 +177,7 @@ app.use(router.routes()).use(router.allowedMethods());
 app.listen(3000);
 console.log("listening on port 3000");
 
-//-----local letters
-
-let loginData = new Map();
-let publicData = new Map();
-let avatarData = new Map();
-let messagesData = new Map();
+//-----local functions
 
 async function getUsers() {
   let otherUsersInfo = {};
@@ -197,8 +192,8 @@ async function getUsers() {
         score: entry[1].score,
         mistruth: entry[1].mistruth,
         lastUpdate: entry[1].lastUpdate,
-        results: entry[1].results
-      }
+        results: entry[1].results,
+      },
     };
   }
   return otherUsersInfo;
@@ -220,7 +215,7 @@ async function setUser(newUser) {
   if (loginData.has(newUser.name)) return false;
   loginData.set(newUser.name, {
     name: newUser.name,
-    password: newUser.password
+    password: newUser.password,
   });
   const publicUser = {
     name: newUser.name,
@@ -230,7 +225,7 @@ async function setUser(newUser) {
     manifest: "",
     tags: "",
     filter: "",
-    lastUpdate: newUser.lastUpdate
+    lastUpdate: newUser.lastUpdate,
   };
   publicData.set(newUser.name, publicUser);
   avatarData.set(newUser.name, { avatar: null });
@@ -272,8 +267,8 @@ async function getOtherUsers(userID, filter) {
             mistruth: entry[1].mistruth,
             tags: entry[1].tags,
             lastUpdate: entry[1].lastUpdate,
-            results: entry[1].results
-          }
+            results: entry[1].results,
+          },
         };
     }
   }
@@ -287,7 +282,7 @@ async function getOtherUser(otherUserID) {
     manifest: otherUserAll.manifest,
     mistruth: otherUserAll.mistruth,
     tags: otherUserAll.tags,
-    lastUpdate: otherUserAll.lastUpdate
+    lastUpdate: otherUserAll.lastUpdate,
   };
   return otherUser;
 }
@@ -297,7 +292,7 @@ async function getAllMessages() {
   for (let entry of messagesData) {
     messages = {
       ...messages,
-      [entry[0]]: entry[1]
+      [entry[0]]: entry[1],
     };
   }
   return messages;
@@ -319,7 +314,7 @@ async function sendMessage(userID, otherUserID, message, currentDate) {
     text: message,
     date: currentDate,
     isSend: true,
-    isRead: false
+    isRead: false,
   };
   const messagesOfUser = messagesData.get(userID);
   const userMessages = messagesOfUser.hasOwnProperty(otherUserID)
@@ -327,7 +322,7 @@ async function sendMessage(userID, otherUserID, message, currentDate) {
     : [];
   messagesData.set(userID, {
     ...messagesOfUser,
-    [otherUserID]: [...userMessages, { ...fullMessage }]
+    [otherUserID]: [...userMessages, { ...fullMessage }],
   });
   const messagesOfOtherUser = messagesData.get(otherUserID);
   const otherUserMessages = messagesOfOtherUser.hasOwnProperty(userID)
@@ -335,7 +330,7 @@ async function sendMessage(userID, otherUserID, message, currentDate) {
     : [];
   messagesData.set(otherUserID, {
     ...messagesOfOtherUser,
-    [userID]: [...otherUserMessages, { ...fullMessage }]
+    [userID]: [...otherUserMessages, { ...fullMessage }],
   });
   return true;
 }
@@ -348,7 +343,7 @@ async function setIsRead(userID, otherUserID, messageID) {
   );
   messagesData.set(userID, {
     ...messagesOfUser,
-    [otherUserID]: newUserMessages
+    [otherUserID]: newUserMessages,
   });
   const messagesOfOtherUser = messagesData.get(otherUserID);
   const otherUserMessages = messagesOfOtherUser[userID];
@@ -357,7 +352,7 @@ async function setIsRead(userID, otherUserID, messageID) {
   );
   messagesData.set(otherUserID, {
     ...messagesOfOtherUser,
-    [userID]: newOtherUserMessages
+    [userID]: newOtherUserMessages,
   });
   return true;
 }
@@ -370,7 +365,7 @@ async function deleteMessage(userID, otherUserID, messageID) {
   );
   messagesData.set(userID, {
     ...messagesOfUser,
-    [otherUserID]: newUserMessages
+    [otherUserID]: newUserMessages,
   });
   const messagesOfOtherUser = messagesData.get(otherUserID);
   const otherUserMessages = messagesOfOtherUser[userID];
@@ -379,7 +374,7 @@ async function deleteMessage(userID, otherUserID, messageID) {
   );
   messagesData.set(otherUserID, {
     ...messagesOfOtherUser,
-    [userID]: newOtherUserMessages
+    [userID]: newOtherUserMessages,
   });
   return true;
 }
@@ -394,8 +389,8 @@ client.connect();
 
 async function getUsersDB() {
   let usersInfo = {};
-  const publicData = client.db().collection("publicData");
-  const users = await publicData.find({});
+  const userInformation = client.db().collection("userInformation");
+  const users = await userInformation.find({});
   await users.forEach((user) => {
     usersInfo = {
       ...usersInfo,
@@ -407,8 +402,8 @@ async function getUsersDB() {
         score: user.score,
         mistruth: user.mistruth,
         lastUpdate: user.lastUpdate,
-        results: user.results
-      }
+        results: user.results,
+      },
     };
   });
   users.close();
@@ -416,19 +411,19 @@ async function getUsersDB() {
 }
 
 async function getAllMessagesDB() {
-  let messages = {};
-  const messagesData = client.db().collection("messagesData");
-  const allMessages = await messagesData.find({});
-  await allMessages.forEach((userMessages) => {
-    messages = {
-      ...messages,
-      [userMessages._id]: {
-        userMessages
-      }
+  let chats = {};
+  const messages = client.db().collection("messages");
+  const allMessages = await messages.find({});
+  await allMessages.forEach((userChats) => {
+    chats = {
+      ...chats,
+      [userChats._id]: {
+        userChats,
+      },
     };
   });
   allMessages.close();
-  return messages;
+  return chats;
 }
 
 async function isNameFreeDB(name) {
@@ -442,11 +437,11 @@ async function loginDB({ name, password, lastUpdate }) {
   const loginData = client.db().collection("loginData");
   const user = await loginData.findOne({ _id: name });
   if (user.password !== password) return false;
-  const publicData = client.db().collection("publicData");
-  await publicData.updateOne(
+  const userInformation = client.db().collection("userInformation");
+  await userInformation.updateOne(
     { _id: name },
     {
-      $set: { lastUpdate }
+      $set: { lastUpdate },
     }
   );
   return true;
@@ -458,7 +453,7 @@ async function setUserDB(newUser) {
   const isNameFree = user === null ? true : false;
   if (!isNameFree) return false;
   loginData.insertOne({ _id: newUser.name, password: newUser.password });
-  const publicUser = {
+  const userInfo = {
     name: newUser.name,
     results: {},
     score: 0,
@@ -466,20 +461,20 @@ async function setUserDB(newUser) {
     manifest: "",
     tags: "",
     filter: "",
-    lastUpdate: newUser.lastUpdate
+    lastUpdate: newUser.lastUpdate,
   };
-  const publicData = client.db().collection("publicData");
-  await publicData.insertOne({ _id: newUser.name, ...publicUser });
-  const avatarData = client.db().collection("avatarData");
-  await avatarData.insertOne({ _id: newUser.name, avatar: null });
-  const messagesData = client.db().collection("messagesData");
-  await messagesData.insertOne({ _id: newUser.name });
+  const userInformation = client.db().collection("userInformation");
+  await userInformation.insertOne({ _id: newUser.name, ...userInfo });
+  const avatars = client.db().collection("avatars");
+  await avatars.insertOne({ _id: newUser.name, avatar: null });
+  const messages = client.db().collection("messages");
+  await messages.insertOne({ _id: newUser.name });
   return true;
 }
 
 async function getUserDB(userID) {
-  const publicData = client.db().collection("publicData");
-  const user = await publicData.findOne(
+  const userInformation = client.db().collection("userInformation");
+  const user = await userInformation.findOne(
     { _id: userID },
     { projection: { _id: 0 } }
   );
@@ -487,28 +482,28 @@ async function getUserDB(userID) {
 }
 
 async function updateUserDB(userID, newUserData) {
-  const publicData = client.db().collection("publicData");
-  await publicData.updateOne(
+  const userInformation = client.db().collection("userInformation");
+  await userInformation.updateOne(
     { _id: userID },
     {
-      $set: { ...newUserData }
+      $set: { ...newUserData },
     }
   );
   return true;
 }
 
 async function getAvatarDB(userID) {
-  const avatarData = client.db().collection("avatarData");
-  const user = await avatarData.findOne({ _id: userID });
+  const avatars = client.db().collection("avatars");
+  const user = await avatars.findOne({ _id: userID });
   return user.avatar;
 }
 
 async function setAvatarServeDB(userID, avatar) {
-  const avatarData = client.db().collection("avatarData");
-  await avatarData.updateOne(
+  const avatars = client.db().collection("avatars");
+  await avatars.updateOne(
     { _id: userID },
     {
-      $set: { avatar }
+      $set: { avatar },
     }
   );
   return true;
@@ -517,8 +512,8 @@ async function setAvatarServeDB(userID, avatar) {
 async function getOtherUsersDB(userID, filter) {
   let otherUsersInfo = {};
   const filterTags = filter ? filter.toLowerCase() : "";
-  const publicData = client.db().collection("publicData");
-  const users = await publicData.find({});
+  const userInformation = client.db().collection("userInformation");
+  const users = await userInformation.find({});
   await users.forEach((user) => {
     if (user._id !== userID) {
       if (user.tags.toLowerCase().indexOf(filterTags) !== -1)
@@ -530,8 +525,8 @@ async function getOtherUsersDB(userID, filter) {
             mistruth: user.mistruth,
             tags: user.tags,
             lastUpdate: user.lastUpdate,
-            results: user.results
-          }
+            results: user.results,
+          },
         };
     }
   });
@@ -540,8 +535,8 @@ async function getOtherUsersDB(userID, filter) {
 }
 
 async function getOtherUserDB(otherUserID) {
-  const publicData = client.db().collection("publicData");
-  const otherUser = await publicData.findOne(
+  const userInformation = client.db().collection("userInformation");
+  const otherUser = await userInformation.findOne(
     { _id: otherUserID },
     {
       projection: {
@@ -550,20 +545,20 @@ async function getOtherUserDB(otherUserID) {
         manifest: 1,
         mistruth: 1,
         tags: 1,
-        lastUpdate: 1
-      }
+        lastUpdate: 1,
+      },
     }
   );
   return otherUser;
 }
 
 async function getMessagesDB(userID, otherUserID) {
-  const messagesData = client.db().collection("messagesData");
-  const messages = await messagesData.findOne(
+  const messages = client.db().collection("messages");
+  const chat = await messages.findOne(
     { _id: userID },
     { projection: { _id: 0, [otherUserID]: 1 } }
   );
-  return messages.hasOwnProperty(otherUserID) ? messages[otherUserID] : [];
+  return chat.hasOwnProperty(otherUserID) ? chat[otherUserID] : [];
 }
 
 async function sendMessageDB(userID, otherUserID, message, currentDate) {
@@ -574,96 +569,97 @@ async function sendMessageDB(userID, otherUserID, message, currentDate) {
     text: message,
     date: currentDate,
     isSend: true,
-    isRead: false
+    isRead: false,
   };
-  const messagesData = client.db().collection("messagesData");
-  const userMessages = await messagesData.findOne(
+  const messages = client.db().collection("messages");
+  const chat = await messages.findOne(
     { _id: userID },
     { projection: { _id: 0, [otherUserID]: 1 } }
   );
-  const userNewMessages = userMessages.hasOwnProperty(otherUserID)
-    ? [...userMessages[otherUserID], fullMessage]
+  const updatedChat = chat.hasOwnProperty(otherUserID)
+    ? [...chat[otherUserID], fullMessage]
     : [fullMessage];
-  await messagesData.updateOne(
+  await messages.updateOne(
     { _id: userID },
     {
-      $set: { [otherUserID]: userNewMessages }
+      $set: { [otherUserID]: updatedChat },
     }
   );
-  const otherUserMessages = await messagesData.findOne(
+  const otherUserChat = await messages.findOne(
     { _id: otherUserID },
     { projection: { _id: 0, [userID]: 1 } }
   );
-  const otherUserNewMessages = userMessages.hasOwnProperty(userID)
-    ? [...otherUserMessages[userID], fullMessage]
+  const updatedOtherUserChat = otherUserChat.hasOwnProperty(userID)
+    ? [...otherUserChat[userID], fullMessage]
     : [fullMessage];
-  await messagesData.updateOne(
+  await messages.updateOne(
     { _id: otherUserID },
     {
-      $set: { [userID]: otherUserNewMessages }
-    }
-  );
-  return true;
-}
-
-async function setIsReadDB(userID, otherUserID, messageID) {
-  const messagesData = client.db().collection("messagesData");
-  const userMessages = await messagesData.findOne(
-    { _id: userID },
-    { projection: { _id: 0, [otherUserID]: 1 } }
-  );
-  const userNewMessages = userMessages[otherUserID].map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  await messagesData.updateOne(
-    { _id: userID },
-    {
-      $set: { [otherUserID]: userNewMessages }
-    }
-  );
-  const otherUserMessages = await messagesData.findOne(
-    { _id: otherUserID },
-    { projection: { _id: 0, [userID]: 1 } }
-  );
-  const newOtherUserMessages = otherUserMessages[userID].map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  await messagesData.updateOne(
-    { _id: otherUserID },
-    {
-      $set: { [userID]: newOtherUserMessages }
+      $set: { [userID]: updatedOtherUserChat },
     }
   );
   return true;
 }
 
 async function deleteMessageDB(userID, otherUserID, messageID) {
-  const messagesData = client.db().collection("messagesData");
-  const userMessages = await messagesData.findOne(
+  const messages = client.db().collection("messages");
+  const chat = await messages.findOne(
     { _id: userID },
     { projection: { _id: 0, [otherUserID]: 1 } }
   );
-  const userNewMessages = userMessages[otherUserID].filter(
+  const updatedChat = chat[otherUserID].filter(
     (message) => message.id !== messageID
   );
-  await messagesData.updateOne(
+  await messages.updateOne(
     { _id: userID },
     {
-      $set: { [otherUserID]: userNewMessages }
+      $set: { [otherUserID]: updatedChat },
     }
   );
-  const otherUserMessages = await messagesData.findOne(
+  const otherUserChat = await messages.findOne(
     { _id: otherUserID },
     { projection: { _id: 0, [userID]: 1 } }
   );
-  const newOtherUserMessages = otherUserMessages[userID].filter(
+  const updatedOtherUserChat = otherUserChat[userID].filter(
     (message) => message.id !== messageID
   );
-  await messagesData.updateOne(
+  await messages.updateOne(
     { _id: otherUserID },
     {
-      $set: { [userID]: newOtherUserMessages }
+      $set: { [userID]: updatedOtherUserChat },
     }
   );
   return true;
 }
+
+async function setIsReadDB(userID, otherUserID, messageID) {
+  const messages = client.db().collection("messages");
+  const chat = await messages.findOne(
+    { _id: userID },
+    { projection: { _id: 0, [otherUserID]: 1 } }
+  );
+  const updatedChat = chat[otherUserID].map((message) =>
+    message.id === messageID ? { ...message, isRead: true } : message
+  );
+  await messages.updateOne(
+    { _id: userID },
+    {
+      $set: { [otherUserID]: updatedChat },
+    }
+  );
+  const otherUserChat = await messages.findOne(
+    { _id: otherUserID },
+    { projection: { _id: 0, [userID]: 1 } }
+  );
+  const updatedOtherUserChat = otherUserChat[userID].map((message) =>
+    message.id === messageID ? { ...message, isRead: true } : message
+  );
+  await messages.updateOne(
+    { _id: otherUserID },
+    {
+      $set: { [userID]: updatedOtherUserChat },
+    }
+  );
+  return true;
+}
+
