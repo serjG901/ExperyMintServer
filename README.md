@@ -1,7 +1,10 @@
 # ExperyMintServer - full app ExperyMint.
+
+https://x6mlu.sse.codesandbox.io/
+
 CRA + tailwindcss + vanilla-tilt + react-router <-> simple js fetch <-> koa2 + mongodb
 
-UI - ExperyMintUI (url - )
+UI - ExperyMintUI (url - https://github.com/serjG901/ExperyMintUI.git)
 
 Adaptive flex design, 3 main page - account, game, closest people.
 
