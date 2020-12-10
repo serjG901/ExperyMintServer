@@ -1,29 +1,27 @@
+const db = require("./db");
 const Koa = require("koa");
 const bodyParser = require("koa-bodyparser");
 const session = require("koa-session");
 const Router = require("koa-router");
 const serve = require("koa-static");
 const mount = require("koa-mount");
+const send = require("koa-send");
 
 const app = new Koa();
 
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    ctx.status = err.status || 500;
+    ctx.body = err.message;
+    ctx.app.emit("error", err, ctx);
+  }
+});
+
 app.keys = ["nemnogo raznie cluchi!"];
 
-const CONFIG = {
-  key: "wery big key" /** (string) cookie key (default is koa.sess) */,
-  /** (number || 'session') maxAge in ms (default is 1 days) */
-  /** 'session' will result in a cookie that expires when session/browser is closed */
-  /** Warning: If a session cookie is stolen, this cookie will never expire */
-  maxAge: 86400000,
-  autoCommit: true /** (boolean) automatically commit headers (default true) */,
-  overwrite: true /** (boolean) can overwrite or not (default true) */,
-  httpOnly: true /** (boolean) httpOnly or not (default true) */,
-  signed: true /** (boolean) signed or not (default true) */,
-  rolling: false /** (boolean) Force a session identifier cookie to be set on every response. The expiration is reset to the original maxAge, resetting the expiration countdown. (default is false) */,
-  renew: false /** (boolean) renew session when session is nearly expired, so we can always keep user logged in. (default is false)*/,
-  secure: false /** (boolean) secure cookie*/,
-  sameSite: null /** (string) session cookie sameSite options (default null, don't set it) */,
-};
+const CONFIG = { key: "wery big key" };
 
 app.use(session(CONFIG, app));
 app.use(bodyParser());
@@ -31,635 +29,118 @@ app.use(bodyParser());
 const router = new Router();
 
 router
-  .get("/getall", async (ctx, next) => {
-    const users = await getUsersDB();
-    ctx.body = users;
+  .get("/userid/:id", async (ctx) => {
+    const id = await db.getUserId(ctx.params.id);
+    ctx.body = { id };
   })
-  .get("/getallmessages", async (ctx, next) => {
-    const messages = await getAllMessagesDB();
-    ctx.body = messages;
-  })
-  .post("/isnamefree/", async (ctx, next) => {
-    const name = ctx.request.body.name;
-    const status = await isNameFreeDB(name);
-    ctx.body = { status };
-  })
-  .post("/login/", async (ctx, next) => {
-    const user = {
-      name: ctx.request.body.name,
-      password: ctx.request.body.password,
-      lastUpdate: ctx.request.body.lastUpdate,
-    };
-    const isLogin = await loginDB(user);
-    if (isLogin) {
-      ctx.session.userID = user.name;
-    }
-    ctx.body = { isLogin };
-  })
-  .post("/isloggedin/", async (ctx, next) => {
-    const status = ctx.session.userID ? true : false;
-    ctx.body = { status };
-  })
-  .post("/tologgedout/", async (ctx, next) => {
-    ctx.session.userID = null;
-    const status = true;
-    ctx.body = { status };
-  })
-  .post("/setuser/", async (ctx, next) => {
+  .put("/users/", async (ctx) => {
     const newUser = {
-      name: ctx.request.body.name,
+      id: ctx.request.body.id,
       password: ctx.request.body.password,
-      lastUpdate: ctx.request.body.lastUpdate,
     };
-    const status = await setUserDB(newUser);
-    if (status) {
-      ctx.session.userID = newUser.name;
+    const user = await db.addUser(newUser);
+    if (user !== null) {
+      ctx.session.userID = ctx.request.body.id;
     }
-    ctx.body = { status };
+    ctx.body = { user };
   })
-  .post("/getuser/", async (ctx, next) => {
-    const userID = ctx.session.userID;
-    const user = await getUserDB(userID);
-    ctx.body = user;
-  })
-  .post("/updateuser/", async (ctx, next) => {
-    const newUserData = {
-      name: ctx.request.body.name,
-      results: ctx.request.body.results,
-      score: ctx.request.body.score,
-      mistruth: ctx.request.body.mistruth,
-      manifest: ctx.request.body.manifest,
-      tags: ctx.request.body.tags,
-      filter: ctx.request.body.filter,
-      lastUpdate: ctx.request.body.lastUpdate,
+  .post("/session/", async (ctx) => {
+    const loginInfo = {
+      id: ctx.request.body.id,
+      password: ctx.request.body.password,
     };
-    const userID = ctx.session.userID;
-    const status = await updateUserDB(userID, newUserData);
-    ctx.body = { status };
+    const user = await db.login(loginInfo);
+    if (user !== null) {
+      ctx.session.userID = ctx.request.body.id;
+    }
+    ctx.body = { user };
   })
-  .post("/setavatarserve/", async (ctx, next) => {
-    const userID = ctx.session.userID;
-    const newAvatar = ctx.request.body.avatar;
-    const status = await setAvatarServeDB(userID, newAvatar);
-    ctx.body = { status };
+  .get("/session/", async (ctx) => {
+    const authUser =
+      ctx.session.userID === undefined || ctx.session.userID === null
+        ? null
+        : await db.authUser(ctx.session.userID);
+    ctx.body = { authUser };
   })
-  .post("/getavatar/", async (ctx, next) => {
-    const userID = ctx.session.userID;
-    const avatar = await getAvatarDB(userID);
+  .del("/session/", async (ctx) => {
+    await db.logOut(ctx.session.userID);
+    ctx.session.userID = null;
+    ctx.body = { logOutUser: null };
+  })
+  .post("/users/:id", async (ctx) => {
+    if (ctx.session.userID === ctx.params.id) {
+      const userUpdate = ctx.request.body;
+      const updatedUser = await db.updateUser(ctx.session.userID, userUpdate);
+      ctx.body = { updatedUser };
+    } else {
+      ctx.body = null;
+    }
+  })
+  .get("/avatars/:id", async (ctx) => {
+    const avatar = await db.avatars(ctx.params.id);
     ctx.body = { avatar };
   })
-  .post("/getotherusers/", async (ctx, next) => {
-    const filter = ctx.request.body.filter;
-    const userID = ctx.session.userID;
-    const otherUsers = await getOtherUsersDB(userID, filter);
-    ctx.body = otherUsers;
+  .put("/avatars/:id", async (ctx) => {
+    if (ctx.session.userID === ctx.params.id) {
+      const updatedAvatar = await db.updateAvatar(
+        ctx.session.userID,
+        ctx.request.body.avatar
+      );
+      ctx.body = { updatedAvatar };
+    } else {
+      ctx.body = null;
+    }
   })
-  .post("/getotheruser/", async (ctx, next) => {
-    const otherUserID = ctx.request.body.otherUserID;
-    const otherUser = await getOtherUserDB(otherUserID);
-    ctx.body = otherUser;
+  .get("/people/", async (ctx) => {
+    const filtredPeople = await db.people(ctx.session.userID);
+    ctx.body = { people: filtredPeople };
   })
-  .post("/getotheravatar/", async (ctx, next) => {
-    const userID = ctx.request.body.otherUserID;
-    const avatar = await getAvatarDB(userID);
-    ctx.body = { avatar };
-  })
-  .post("/getmessages/", async (ctx, next) => {
-    const otherUserID = ctx.request.body.otherUserID;
-    const userID = ctx.session.userID;
-    const messages = await getMessagesDB(userID, otherUserID);
-    ctx.body = { messages };
-  })
-  .post("/deletemessage/", async (ctx, next) => {
-    const userID = ctx.session.userID;
-    const otherUserID = ctx.request.body.otherUserID;
-    const messageID = ctx.request.body.messageID;
-    const status = await deleteMessageDB(userID, otherUserID, messageID);
-    ctx.body = { status };
-  })
-  .post("/sendmessage/", async (ctx, next) => {
-    const otherUserID = ctx.request.body.otherUserID;
-    const message = ctx.request.body.message;
-    const currentDate = ctx.request.body.currentDate;
-    const userID = ctx.session.userID;
-    const status = await sendMessageDB(
-      userID,
-      otherUserID,
-      message,
-      currentDate
+  .get("/people/:filter", async (ctx) => {
+    const filtredPeople = await db.people(
+      ctx.session.userID,
+      ctx.params.filter
     );
-    ctx.body = { status };
+    ctx.body = { people: filtredPeople };
   })
-  .post("/setisread/", async (ctx, next) => {
-    const userID = ctx.session.userID;
-    const otherUserID = ctx.request.body.otherUserID;
-    const messageID = ctx.request.body.messageID;
-    const status = await setIsReadDB(userID, otherUserID, messageID);
-    ctx.body = { status };
+  .get("/conversations/:personid", async (ctx) => {
+    const conversation = await db.getConversation(
+      ctx.session.userID,
+      ctx.params.personid
+    );
+    ctx.body = { conversation };
   })
-  .put("/users/:id", (ctx, next) => {
-    // ...
+  .post("/conversations/:personid", async (ctx) => {
+    const conversation = await db.addMessage(
+      ctx.session.userID,
+      ctx.params.personid,
+      ctx.request.body.message,
+      ctx.request.body.currentDate
+    );
+    ctx.body = { conversation };
   })
-  .del("/users/:id", (ctx, next) => {
-    // ...
+  .del("/conversations/:personid/messages/:messageid", async (ctx) => {
+    const conversation = await db.deleteMessage(
+      ctx.session.userID,
+      ctx.params.personid,
+      ctx.params.messageid
+    );
+    ctx.body = { conversation };
   })
-  .all("/users/:id", (ctx, next) => {
-    // ...
+  .put("/conversations/:personid/messages", async (ctx) => {
+    const messages = await db.setMessagesIsRead(
+      ctx.session.userID,
+      ctx.params.personid
+    );
+    ctx.body = { messages };
   });
-
-app.use(mount("/", serve("./build")));
-app.use(mount("/account", serve("./build")));
-app.use(mount("/game", serve("./build")));
-app.use(mount("/chat", serve("./build")));
 
 app.use(router.routes()).use(router.allowedMethods());
 
-app.listen(3000);
-console.log("listening on port 3000");
+app.use(mount("/", serve("./build")));
 
-//-----local functions
+app.use(async (ctx) => {
+  await send(ctx, "./build/index.html");
+});
 
-async function getUsers() {
-  let otherUsersInfo = {};
-  for (let entry of publicData) {
-    otherUsersInfo = {
-      ...otherUsersInfo,
-      [entry[0]]: {
-        name: entry[1].name,
-        manifest: entry[1].manifest,
-        filter: entry[1].filter,
-        tags: entry[1].tags,
-        score: entry[1].score,
-        mistruth: entry[1].mistruth,
-        lastUpdate: entry[1].lastUpdate,
-        results: entry[1].results,
-      },
-    };
-  }
-  return otherUsersInfo;
-}
-
-async function isNameFree(name) {
-  return !loginData.has(name);
-}
-
-async function login({ name, password, lastUpdate }) {
-  const user = loginData.get(name);
-  if (user.password !== password) return false;
-  const userOld = publicData.get(name);
-  publicData.set(name, { ...userOld, lastUpdate });
-  return true;
-}
-
-async function setUser(newUser) {
-  if (loginData.has(newUser.name)) return false;
-  loginData.set(newUser.name, {
-    name: newUser.name,
-    password: newUser.password,
-  });
-  const publicUser = {
-    name: newUser.name,
-    results: {},
-    score: 0,
-    mistruth: 0,
-    manifest: "",
-    tags: "",
-    filter: "",
-    lastUpdate: newUser.lastUpdate,
-  };
-  publicData.set(newUser.name, publicUser);
-  avatarData.set(newUser.name, { avatar: null });
-  messagesData.set(newUser.name, {});
-  return true;
-}
-
-async function getUser(userID) {
-  const user = publicData.get(userID);
-  return user;
-}
-
-async function updateUser(userID, newUserData) {
-  publicData.set(userID, newUserData);
-  return true;
-}
-
-async function getAvatar(userID) {
-  const userAvatar = avatarData.get(userID);
-  return userAvatar.avatar;
-}
-
-async function setAvatarServe(userID, avatar) {
-  avatarData.set(userID, { avatar });
-  return true;
-}
-
-async function getOtherUsers(userID, filter) {
-  let otherUsersInfo = {};
-  const filterTags = filter ? filter.toLowerCase() : "";
-  for (let entry of publicData) {
-    if (entry[0] !== userID) {
-      if (entry[1]["tags"].toLowerCase().indexOf(filterTags) !== -1)
-        otherUsersInfo = {
-          ...otherUsersInfo,
-          [entry[0]]: {
-            name: entry[1].name,
-            manifest: entry[1].manifest,
-            mistruth: entry[1].mistruth,
-            tags: entry[1].tags,
-            lastUpdate: entry[1].lastUpdate,
-            results: entry[1].results,
-          },
-        };
-    }
-  }
-  return otherUsersInfo;
-}
-
-async function getOtherUser(otherUserID) {
-  const otherUserAll = publicData.get(otherUserID);
-  const otherUser = {
-    name: otherUserAll.name,
-    manifest: otherUserAll.manifest,
-    mistruth: otherUserAll.mistruth,
-    tags: otherUserAll.tags,
-    lastUpdate: otherUserAll.lastUpdate,
-  };
-  return otherUser;
-}
-
-async function getAllMessages() {
-  let messages = {};
-  for (let entry of messagesData) {
-    messages = {
-      ...messages,
-      [entry[0]]: entry[1],
-    };
-  }
-  return messages;
-}
-
-async function getMessages(userID, otherUserID) {
-  const messagesOfUser = messagesData.get(userID);
-  const messages = messagesOfUser.hasOwnProperty(otherUserID)
-    ? messagesOfUser[otherUserID]
-    : [];
-  return messages;
-}
-
-async function sendMessage(userID, otherUserID, message, currentDate) {
-  const fullMessage = {
-    id: [otherUserID, currentDate].join(""),
-    from: userID,
-    to: otherUserID,
-    text: message,
-    date: currentDate,
-    isSend: true,
-    isRead: false,
-  };
-  const messagesOfUser = messagesData.get(userID);
-  const userMessages = messagesOfUser.hasOwnProperty(otherUserID)
-    ? messagesOfUser[otherUserID]
-    : [];
-  messagesData.set(userID, {
-    ...messagesOfUser,
-    [otherUserID]: [...userMessages, { ...fullMessage }],
-  });
-  const messagesOfOtherUser = messagesData.get(otherUserID);
-  const otherUserMessages = messagesOfOtherUser.hasOwnProperty(userID)
-    ? messagesOfOtherUser[userID]
-    : [];
-  messagesData.set(otherUserID, {
-    ...messagesOfOtherUser,
-    [userID]: [...otherUserMessages, { ...fullMessage }],
-  });
-  return true;
-}
-
-async function setIsRead(userID, otherUserID, messageID) {
-  const messagesOfUser = messagesData.get(userID);
-  const userMessages = messagesOfUser[otherUserID];
-  const newUserMessages = userMessages.map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  messagesData.set(userID, {
-    ...messagesOfUser,
-    [otherUserID]: newUserMessages,
-  });
-  const messagesOfOtherUser = messagesData.get(otherUserID);
-  const otherUserMessages = messagesOfOtherUser[userID];
-  const newOtherUserMessages = otherUserMessages.map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  messagesData.set(otherUserID, {
-    ...messagesOfOtherUser,
-    [userID]: newOtherUserMessages,
-  });
-  return true;
-}
-
-async function deleteMessage(userID, otherUserID, messageID) {
-  const messagesOfUser = messagesData.get(userID);
-  const userMessages = messagesOfUser[otherUserID];
-  const newUserMessages = userMessages.filter(
-    (message) => message.id !== messageID
-  );
-  messagesData.set(userID, {
-    ...messagesOfUser,
-    [otherUserID]: newUserMessages,
-  });
-  const messagesOfOtherUser = messagesData.get(otherUserID);
-  const otherUserMessages = messagesOfOtherUser[userID];
-  const newOtherUserMessages = otherUserMessages.filter(
-    (message) => message.id !== messageID
-  );
-  messagesData.set(otherUserID, {
-    ...messagesOfOtherUser,
-    [userID]: newOtherUserMessages,
-  });
-  return true;
-}
-
-//--------mongoDB
-
-const MongoClient = require("mongodb").MongoClient;
-const uri =
-  "mongodb+srv://db_user_own_way:W8N6DfCP9vtwR78y@dbem.jkmxa.mongodb.net/ExperyMint?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useUnifiedTopology: true });
-client.connect();
-
-async function getUsersDB() {
-  let usersInfo = {};
-  const userInformation = client.db().collection("userInformation");
-  const users = await userInformation.find({});
-  await users.forEach((user) => {
-    usersInfo = {
-      ...usersInfo,
-      [user._id]: {
-        name: user.name,
-        manifest: user.manifest,
-        filter: user.filter,
-        tags: user.tags,
-        score: user.score,
-        mistruth: user.mistruth,
-        lastUpdate: user.lastUpdate,
-        results: user.results,
-      },
-    };
-  });
-  users.close();
-  return usersInfo;
-}
-
-async function getAllMessagesDB() {
-  let chats = {};
-  const messages = client.db().collection("messages");
-  const allMessages = await messages.find({});
-  await allMessages.forEach((userChats) => {
-    chats = {
-      ...chats,
-      [userChats._id]: {
-        userChats,
-      },
-    };
-  });
-  allMessages.close();
-  return chats;
-}
-
-async function isNameFreeDB(name) {
-  const loginData = client.db().collection("loginData");
-  const user = await loginData.findOne({ _id: name });
-  const isNameFree = user === null ? true : false;
-  return isNameFree;
-}
-
-async function loginDB({ name, password, lastUpdate }) {
-  const loginData = client.db().collection("loginData");
-  const user = await loginData.findOne({ _id: name });
-  if (user.password !== password) return false;
-  const userInformation = client.db().collection("userInformation");
-  await userInformation.updateOne(
-    { _id: name },
-    {
-      $set: { lastUpdate },
-    }
-  );
-  return true;
-}
-
-async function setUserDB(newUser) {
-  const loginData = client.db().collection("loginData");
-  const user = await loginData.findOne({ _id: newUser.name });
-  const isNameFree = user === null ? true : false;
-  if (!isNameFree) return false;
-  loginData.insertOne({ _id: newUser.name, password: newUser.password });
-  const userInfo = {
-    name: newUser.name,
-    results: {},
-    score: 0,
-    mistruth: 0,
-    manifest: "",
-    tags: "",
-    filter: "",
-    lastUpdate: newUser.lastUpdate,
-  };
-  const userInformation = client.db().collection("userInformation");
-  await userInformation.insertOne({ _id: newUser.name, ...userInfo });
-  const avatars = client.db().collection("avatars");
-  await avatars.insertOne({ _id: newUser.name, avatar: null });
-  const messages = client.db().collection("messages");
-  await messages.insertOne({ _id: newUser.name });
-  return true;
-}
-
-async function getUserDB(userID) {
-  const userInformation = client.db().collection("userInformation");
-  const user = await userInformation.findOne(
-    { _id: userID },
-    { projection: { _id: 0 } }
-  );
-  return user;
-}
-
-async function updateUserDB(userID, newUserData) {
-  const userInformation = client.db().collection("userInformation");
-  await userInformation.updateOne(
-    { _id: userID },
-    {
-      $set: { ...newUserData },
-    }
-  );
-  return true;
-}
-
-async function getAvatarDB(userID) {
-  const avatars = client.db().collection("avatars");
-  const user = await avatars.findOne({ _id: userID });
-  return user.avatar;
-}
-
-async function setAvatarServeDB(userID, avatar) {
-  const avatars = client.db().collection("avatars");
-  await avatars.updateOne(
-    { _id: userID },
-    {
-      $set: { avatar },
-    }
-  );
-  return true;
-}
-
-async function getOtherUsersDB(userID, filter) {
-  let otherUsersInfo = {};
-  const filterTags = filter ? filter.toLowerCase() : "";
-  const userInformation = client.db().collection("userInformation");
-  const users = await userInformation.find({});
-  await users.forEach((user) => {
-    if (user._id !== userID) {
-      if (user.tags.toLowerCase().indexOf(filterTags) !== -1)
-        otherUsersInfo = {
-          ...otherUsersInfo,
-          [user._id]: {
-            name: user.name,
-            manifest: user.manifest,
-            mistruth: user.mistruth,
-            tags: user.tags,
-            lastUpdate: user.lastUpdate,
-            results: user.results,
-          },
-        };
-    }
-  });
-  users.close();
-  return otherUsersInfo;
-}
-
-async function getOtherUserDB(otherUserID) {
-  const userInformation = client.db().collection("userInformation");
-  const otherUser = await userInformation.findOne(
-    { _id: otherUserID },
-    {
-      projection: {
-        _id: 0,
-        name: 1,
-        manifest: 1,
-        mistruth: 1,
-        tags: 1,
-        lastUpdate: 1,
-      },
-    }
-  );
-  return otherUser;
-}
-
-async function getMessagesDB(userID, otherUserID) {
-  const messages = client.db().collection("messages");
-  const chat = await messages.findOne(
-    { _id: userID },
-    { projection: { _id: 0, [otherUserID]: 1 } }
-  );
-  return chat.hasOwnProperty(otherUserID) ? chat[otherUserID] : [];
-}
-
-async function sendMessageDB(userID, otherUserID, message, currentDate) {
-  const fullMessage = {
-    id: [otherUserID, currentDate].join(""),
-    from: userID,
-    to: otherUserID,
-    text: message,
-    date: currentDate,
-    isSend: true,
-    isRead: false,
-  };
-  const messages = client.db().collection("messages");
-  const chat = await messages.findOne(
-    { _id: userID },
-    { projection: { _id: 0, [otherUserID]: 1 } }
-  );
-  const updatedChat = chat.hasOwnProperty(otherUserID)
-    ? [...chat[otherUserID], fullMessage]
-    : [fullMessage];
-  await messages.updateOne(
-    { _id: userID },
-    {
-      $set: { [otherUserID]: updatedChat },
-    }
-  );
-  const otherUserChat = await messages.findOne(
-    { _id: otherUserID },
-    { projection: { _id: 0, [userID]: 1 } }
-  );
-  const updatedOtherUserChat = otherUserChat.hasOwnProperty(userID)
-    ? [...otherUserChat[userID], fullMessage]
-    : [fullMessage];
-  await messages.updateOne(
-    { _id: otherUserID },
-    {
-      $set: { [userID]: updatedOtherUserChat },
-    }
-  );
-  return true;
-}
-
-async function deleteMessageDB(userID, otherUserID, messageID) {
-  const messages = client.db().collection("messages");
-  const chat = await messages.findOne(
-    { _id: userID },
-    { projection: { _id: 0, [otherUserID]: 1 } }
-  );
-  const updatedChat = chat[otherUserID].filter(
-    (message) => message.id !== messageID
-  );
-  await messages.updateOne(
-    { _id: userID },
-    {
-      $set: { [otherUserID]: updatedChat },
-    }
-  );
-  const otherUserChat = await messages.findOne(
-    { _id: otherUserID },
-    { projection: { _id: 0, [userID]: 1 } }
-  );
-  const updatedOtherUserChat = otherUserChat[userID].filter(
-    (message) => message.id !== messageID
-  );
-  await messages.updateOne(
-    { _id: otherUserID },
-    {
-      $set: { [userID]: updatedOtherUserChat },
-    }
-  );
-  return true;
-}
-
-async function setIsReadDB(userID, otherUserID, messageID) {
-  const messages = client.db().collection("messages");
-  const chat = await messages.findOne(
-    { _id: userID },
-    { projection: { _id: 0, [otherUserID]: 1 } }
-  );
-  const updatedChat = chat[otherUserID].map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  await messages.updateOne(
-    { _id: userID },
-    {
-      $set: { [otherUserID]: updatedChat },
-    }
-  );
-  const otherUserChat = await messages.findOne(
-    { _id: otherUserID },
-    { projection: { _id: 0, [userID]: 1 } }
-  );
-  const updatedOtherUserChat = otherUserChat[userID].map((message) =>
-    message.id === messageID ? { ...message, isRead: true } : message
-  );
-  await messages.updateOne(
-    { _id: otherUserID },
-    {
-      $set: { [userID]: updatedOtherUserChat },
-    }
-  );
-  return true;
-}
-
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`listening on port ${port}`));
