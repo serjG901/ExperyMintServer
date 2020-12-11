@@ -68,28 +68,24 @@ router
     ctx.body = { logOutUser: null };
   })
   .post("/users/:id", async (ctx) => {
-    if (ctx.session.userID === ctx.params.id) {
-      const userUpdate = ctx.request.body;
-      const updatedUser = await db.updateUser(ctx.session.userID, userUpdate);
-      ctx.body = { updatedUser };
-    } else {
-      ctx.body = null;
-    }
+    if (ctx.session.userID !== ctx.params.id)
+      throw new ForbidenError("You do not have access to the resource");
+    const userUpdate = ctx.request.body;
+    const updatedUser = await db.updateUser(ctx.session.userID, userUpdate);
+    ctx.body = { updatedUser };
   })
   .get("/avatars/:id", async (ctx) => {
     const avatar = await db.avatars(ctx.params.id);
     ctx.body = { avatar };
   })
   .put("/avatars/:id", async (ctx) => {
-    if (ctx.session.userID === ctx.params.id) {
-      const updatedAvatar = await db.updateAvatar(
-        ctx.session.userID,
-        ctx.request.body.avatar
-      );
-      ctx.body = { updatedAvatar };
-    } else {
-      ctx.body = null;
-    }
+    if (ctx.session.userID !== ctx.params.id)
+      throw new ForbidenError("You do not have access to the resource");
+    const updatedAvatar = await db.updateAvatar(
+      ctx.session.userID,
+      ctx.request.body.avatar
+    );
+    ctx.body = { updatedAvatar };
   })
   .get("/people/", async (ctx) => {
     const filtredPeople = await db.people(ctx.session.userID);
@@ -144,3 +140,11 @@ app.use(async (ctx) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`listening on port ${port}`));
+
+class ForbidenError extends Error {
+  constructor(message) {
+    super(message);
+    this.status = 403;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
