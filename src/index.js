@@ -6,6 +6,7 @@ const Router = require("koa-router");
 const serve = require("koa-static");
 const mount = require("koa-mount");
 const send = require("koa-send");
+const queryString = require('query-string');
 
 const app = new Koa();
 
@@ -87,14 +88,12 @@ router
     );
     ctx.body = { updatedAvatar };
   })
-  .get("/people/", async (ctx) => {
-    const filtredPeople = await db.people(ctx.session.userID);
-    ctx.body = { people: filtredPeople };
-  })
-  .get("/people/:filter", async (ctx) => {
+  .get("/people", async (ctx) => {
+    const url = queryString.parseUrl(ctx.request.href);
+    const filter = url.query.filter;
     const filtredPeople = await db.people(
       ctx.session.userID,
-      ctx.params.filter
+      filter
     );
     ctx.body = { people: filtredPeople };
   })
