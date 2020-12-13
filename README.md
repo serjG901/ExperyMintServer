@@ -1,6 +1,6 @@
 # ExperyMintServer - full app ExperyMint.
 
-https://x6mlu.sse.codesandbox.io/
+https://3rtim.sse.codesandbox.io/
 
 CRA + tailwindcss + vanilla-tilt + react-router <-> simple js fetch <-> koa2 + mongodb
 
