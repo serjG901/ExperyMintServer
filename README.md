@@ -42,8 +42,7 @@ DELETE "/session/" - log out from session
 POST "/users/:id" - update user data
 GET "/avatars/:id" - get avatar for any user
 PUT "/avatars/:id" - update user avatar
-GET "/people/" - get default sorted users
-GET "/people/:filter" - get filtred users
+GET "/people" - get sorted users by filter
 GET "/conversations/:personid" - get conversation with person in person list
 POST "/conversations/:personid" - add message in conversation
 DELETE "/conversations/:personid/messages/:messageid" - delete message in conversation
