@@ -1,6 +1,8 @@
-# ExperyMintServer - full app ExperyMint.
+# ExperyMintServer - full app ExperyMint (UI and server).
 
-https://3rtim.sse.codesandbox.io/
+ExperyMint - find people who are really close to you!
+
+Try it - https://obscure-depths-17236.herokuapp.com/
 
 CRA + tailwindcss + vanilla-tilt + react-router <-> simple js fetch <-> koa2 + mongodb
 
@@ -35,19 +37,30 @@ Server side based in koa2 and mongodb. UI connect to server with simple fetch.
 
 Endpoint:
 GET "/userid/:id" - check free user id
+
 PUT "/users/" - add new user
+
 POST "/session/" - login user
+
 GET "/session/" - check user id in session
+
 DELETE "/session/" - log out from session
+
 POST "/users/:id" - update user data
+
 GET "/avatars/:id" - get avatar for any user
+
 PUT "/avatars/:id" - update user avatar
+
 GET "/people" - get sorted users by filter
+
 GET "/conversations/:personid" - get conversation with person in person list
+
 POST "/conversations/:personid" - add message in conversation
+
 DELETE "/conversations/:personid/messages/:messageid" - delete message in conversation
+
 PUT "/conversations/:personid/messages" - seting not readed messages like readed when user open person.
 
-Find people who are really close to you!
 
 
