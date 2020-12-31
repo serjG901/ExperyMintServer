@@ -6,7 +6,7 @@ const Router = require("koa-router");
 const serve = require("koa-static");
 const mount = require("koa-mount");
 const send = require("koa-send");
-const queryString = require('query-string');
+const queryString = require("query-string");
 
 const app = new Koa();
 
@@ -38,6 +38,7 @@ router
     const newUser = {
       id: ctx.request.body.id,
       password: ctx.request.body.password,
+      theme: ctx.request.body.theme,
     };
     const user = await db.addUser(newUser);
     if (user !== null) {
@@ -49,6 +50,7 @@ router
     const loginInfo = {
       id: ctx.request.body.id,
       password: ctx.request.body.password,
+      theme: ctx.request.body.theme,
     };
     const user = await db.login(loginInfo);
     if (user !== null) {
@@ -91,10 +93,7 @@ router
   .get("/people", async (ctx) => {
     const url = queryString.parseUrl(ctx.request.href);
     const filter = url.query.filter;
-    const filtredPeople = await db.people(
-      ctx.session.userID,
-      filter
-    );
+    const filtredPeople = await db.people(ctx.session.userID, filter);
     ctx.body = { people: filtredPeople };
   })
   .get("/conversations/:personid", async (ctx) => {

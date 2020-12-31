@@ -32,6 +32,7 @@ async function addUser(newUser) {
     if (insertResult.insertedId === newUser.id) {
       const initialUser = {
         name: newUser.id,
+        theme: newUser.theme,
         manifest: "",
         tags: "",
         filter: "",
@@ -85,6 +86,7 @@ async function login(loginInfo) {
       { _id: loginInfo.id },
       {
         $set: {
+          theme: loginInfo.theme,
           lastActionTime: Date.now(),
           lastAction: "LogInUpdate",
         },
