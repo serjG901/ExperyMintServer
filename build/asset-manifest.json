@@ -1,23 +1,21 @@
 {
   "files": {
     "main.css": "/static/css/main.4dc6a02b.chunk.css",
-    "main.js": "/static/js/main.d8c47934.chunk.js",
-    "main.js.map": "/static/js/main.d8c47934.chunk.js.map",
-    "runtime-main.js": "/static/js/runtime-main.bbaf8c30.js",
-    "runtime-main.js.map": "/static/js/runtime-main.bbaf8c30.js.map",
+    "main.js": "/static/js/main.f5f5cc36.chunk.js",
+    "main.js.map": "/static/js/main.f5f5cc36.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.46dd5846.js",
+    "runtime-main.js.map": "/static/js/runtime-main.46dd5846.js.map",
     "static/js/2.bf236642.chunk.js": "/static/js/2.bf236642.chunk.js",
     "static/js/2.bf236642.chunk.js.map": "/static/js/2.bf236642.chunk.js.map",
-    "static/js/3.dfb98717.chunk.js": "/static/js/3.dfb98717.chunk.js",
-    "static/js/3.dfb98717.chunk.js.map": "/static/js/3.dfb98717.chunk.js.map",
     "index.html": "/index.html",
     "static/css/main.4dc6a02b.chunk.css.map": "/static/css/main.4dc6a02b.chunk.css.map",
     "static/js/2.bf236642.chunk.js.LICENSE.txt": "/static/js/2.bf236642.chunk.js.LICENSE.txt",
     "static/media/tiltStyle.css": "/static/media/brick.0533cfcf.jpg"
   },
   "entrypoints": [
-    "static/js/runtime-main.bbaf8c30.js",
+    "static/js/runtime-main.46dd5846.js",
     "static/js/2.bf236642.chunk.js",
     "static/css/main.4dc6a02b.chunk.css",
-    "static/js/main.d8c47934.chunk.js"
+    "static/js/main.f5f5cc36.chunk.js"
   ]
 }
