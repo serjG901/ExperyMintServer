@@ -1,6 +1,5 @@
 ﻿const MongoClient = require("mongodb").MongoClient;
-const uri =
-  "mongodb+srv://db_user_own_way:W8N6DfCP9vtwR78y@dbem.jkmxa.mongodb.net/ExperyMint?retryWrites=true&w=majority";
+const uri = process.env.DB;
 const client = new MongoClient(uri, { useUnifiedTopology: true });
 client.connect();
 
