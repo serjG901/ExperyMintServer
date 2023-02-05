@@ -8,6 +8,7 @@ const mount = require("koa-mount");
 const send = require("koa-send");
 const queryString = require("query-string");
 //bild
+const a = 1;
 const app = new Koa();
 
 app.use(async (ctx, next) => {
