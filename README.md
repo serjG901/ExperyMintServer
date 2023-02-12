@@ -2,7 +2,7 @@
 
 ExperyMint - find people who are really close to you!
 
-Try it - https://obscure-depths-17236.herokuapp.com/
+Try it - https://mint.herokuapp.com/
 
 CRA + tailwindcss + vanilla-tilt + react-router <-> simple js fetch <-> koa2 + mongodb
 
